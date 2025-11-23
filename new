@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<title>四要素句練習遊戲</title>
+<style>
+body { font-family: "Microsoft JhengHei", sans-serif; background: #fffbe6; padding: 20px; text-align: center; }
+h1 { color: #ff6b6b; }
+.container { max-width: 900px; margin: 0 auto; }
+.slots { display: flex; justify-content: center; gap: 20px; margin: 40px 0; }
+.slot { width: 180px; height: 80px; border: 3px dashed #4ecdc4; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: white; }
+.words { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 30px 0; }
+.word { padding: 15px 25px; background: #ffe66d; border-radius: 15px; cursor: grab; font-size: 22px; user-select: none; }
+.word:active { cursor: grabbing; }
+#sentence { font-size: 32px; margin: 40px; color: #2a9d8f; min-height: 60px; }
+#check { padding: 15px 40px; font-size: 24px; background: #ff9ff3; border: none; border-radius: 15px; cursor: pointer; }
+.correct { background: #95f095 !important; }
+.wrong { background: #ff8b94 !important; }
+</style>
+</head>
+<body>
+
+<h1>四要素句大挑戰！</h1>
+<div class="container">
+
+  <div class="slots">
+    <div class="slot" id="time">時間</div>
+    <div class="slot" id="person">人物</div>
+    <div class="slot" id="place">地點</div>
+    <div class="slot" id="action">事情</div>
+  </div>
+
+  <div id="sentence">擺好四樣嘢就睇到句子啦！</div>
+
+  <div class="words" id="wordBank"></div>
+
+  <button id="check">檢查答案</button>
+  <button onclick="newGame()">下一題</button>
+
+</div>
+
+<script>
+// 題庫（隨時加多啲）
+const questions = [
+  { time: "昨天早上", person: "小明同妹妹", place: "海洋公園", action: "坐過山車", answer: "昨天早上，小明同妹妹在海洋公園坐過山車。" },
+  { time: "今天下午", person: "媽咪", place: "超級市場", action: "買菜", answer: "今天下午，媽咪在超級市場買菜。" },
+  { time: "上個星期日", person: "彼得同爸爸", place: "迪士尼樂園", action: "睇煙花", answer: "上個星期日，彼得同爸爸在迪士尼樂園睇煙花。" },
+  { time: "吃飯之後", person: "我", place: "學校操場", action: "踢足球", answer: "吃飯之後，我在學校操場踢足球。" },
+  { time: "聖誕節", person: "全家人", place: "山頂", action: "影靚相", answer: "聖誕節，全家人在山頂影靚相。" },
+  { time: "剛才", person: "老師", place: "課室", action: "講故事", answer: "剛才，老師在課室講故事。" }
+];
+
+let currentQ;
+
+function newGame() {
+  currentQ = questions[Math.floor(Math.random() * questions.length)];
+  
+  // 清空位置
+  document.querySelectorAll('.slot').forEach(s => {
+    s.textContent = s.id === "time" ? "時間" : s.id === "person" ? "人物" : s.id === "place" ? "地點" : "事情";
+    s.classList.remove("correct","wrong");
+  });
+  
+  document.getElementById('sentence').textContent = "擺好四樣嘢就睇到句子啦！";
+  
+  // 洗牌
+  const words = [currentQ.time, currentQ.person, currentQ.place, currentQ.action];
+  words.sort(() => Math.random() - 0.5);
+  
+  const bank = document.getElementById('wordBank');
+  bank.innerHTML = "";
+  words.forEach(w => {
+    const div = document.createElement('div');
+    div.className = "word";
+    div.textContent = w;
+    div.draggable = true;
+    div.ondragstart = drag;
+    div.onclick = () => clickToSlot(div); // 支援點擊
+    bank.appendChild(div);
+  });
+}
+
+function allowDrop(ev) { ev.preventDefault(); }
+
+function drag(ev) { ev.dataTransfer.setData("text", ev.target.textContent); }
+
+function drop(ev) {
+  ev.preventDefault();
+  const data = ev.dataTransfer.getData("text");
+  if (ev.target.classList.contains('slot') && (ev.target.textContent === "時間" || ev.target.textContent === "人物" || ev.target.textContent === "地點" || ev.target.textContent === "事情")) {
+    ev.target.textContent = data;
+    ev.target.classList.remove("correct","wrong");
+    removeFromBank(data);
+    showSentence();
+  }
+}
+
+function clickToSlot(wordDiv) {
+  const emptySlot = [...document.querySelectorAll('.slot')].find(s => 
+    s.textContent === "時間" || s.textContent === "人物" || s.textContent === "地點" || s.textContent === "事情");
+  if (emptySlot) {
+    emptySlot.textContent = wordDiv.textContent;
+    wordDiv.remove();
+    showSentence();
+  }
+}
+
+function removeFromBank(text) {
+  const bank = document.getElementById('wordBank').children;
+  for (let el of bank) {
+    if (el.textContent === text) el.remove();
+  }
+}
+
+function showSentence() {
+  const t = document.getElementById('time').textContent;
+  const p = document.getElementById('person').textContent;
+  const l = document.getElementById('place').textContent;
+  const a = document.getElementById('action').textContent;
+  if (t !== "時間" && p !== "人物" && l !== "地點" && a !== "事情") {
+    document.getElementById('sentence').textContent = t + "，" + p + "在" + l + a + "。";
+  }
+}
+
+document.querySelectorAll('.slot').forEach(s => {
+  s.ondrop = drop;
+  s.ondragover = allowDrop;
+});
+
+document.getElementById('check').onclick = () => {
+  const t = document.getElementById('time').textContent;
+  const p = document.getElementById('person').textContent;
+  const l = document.getElementById('place').textContent;
+  const a = document.getElementById('action').textContent;
+  
+  if (t === currentQ.time && p === currentQ.person && l === currentQ.place && a === currentQ.action) {
+    document.querySelectorAll('.slot').forEach(s => s.classList.add('correct'));
+    document.getElementById('sentence').textContent = "完全啱！好叻仔！🎉";
+  } else {
+    document.querySelectorAll('.slot').forEach(s => s.classList.add('wrong'));
+  }
+};
+
+newGame(); // 開始第一題
+</script>
+</body>
+</html>
